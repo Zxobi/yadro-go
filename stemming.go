@@ -4,10 +4,13 @@ import (
 	"github.com/kljensen/snowball"
 	"github.com/kljensen/snowball/english"
 	"strings"
+	"unicode"
 )
 
 func stem(s string) ([]string, error) {
-	words := strings.Split(strings.ToLower(strings.TrimSpace(s)), " ")
+	words := strings.FieldsFunc(s, func(r rune) bool {
+		return !(unicode.IsLetter(r) || r == '\'' || r == '-')
+	})
 
 	stemmedWordsSet := make(map[string]struct{})
 	for _, v := range words {
@@ -39,13 +42,8 @@ func shouldIgnore(s string) bool {
 	ind := strings.IndexFunc(s, func(r rune) bool {
 		return r == '\''
 	})
-	if ind >= 0 {
-		if isStopWord(s[:ind]) {
-			return true
-		}
-	}
 
-	return false
+	return ind > 0
 }
 
 func isStopWord(s string) bool {

@@ -1,4 +1,4 @@
 build:
-	go mod download && go build -o myapp
+	go mod tidy && go build -o myapp
 
 all: build

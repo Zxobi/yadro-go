@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 )
 
 const strFlag = "s"
@@ -27,7 +28,7 @@ func validateFlag() error {
 	})
 
 	if !strSet {
-		return errors.New("[-s] flag is required")
+		return errors.New(fmt.Sprintf("[-%s] flag is required", strFlag))
 	}
 	return nil
 }
