@@ -12,10 +12,7 @@ func main() {
 		exitWithErr(err)
 	}
 
-	stemmed, err := stem(str)
-	if err != nil {
-		exitWithErr(err)
-	}
+	stemmed := stem(str)
 	fmt.Println(strings.Join(stemmed, " "))
 }
 

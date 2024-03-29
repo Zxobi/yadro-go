@@ -1,40 +1,24 @@
 package main
 
 import (
-	"github.com/kljensen/snowball"
 	"github.com/kljensen/snowball/english"
 	"strings"
 	"unicode"
 )
 
-var stemChain = []func(string) (string, bool, error){
-	stemIgnore,
-	stemApostrophe,
-	stemHyphen,
-	stemInternal,
-}
-
-func stem(s string) ([]string, error) {
+func stem(s string) []string {
 	words := strings.FieldsFunc(s, func(r rune) bool {
-		return !(unicode.IsLetter(r) || r == '\'' || r == '-')
+		return !unicode.IsLetter(r)
 	})
 
 	stemmedWordsSet := make(map[string]struct{})
 	for _, v := range words {
-		var res string
-		for _, f := range stemChain {
-			if stemmed, ok, err := f(v); err != nil {
-				return []string{}, err
-			} else if ok {
-				res = stemmed
-				break
-			}
-		}
-
-		if len(res) == 0 {
+		stemmed := english.Stem(v, false)
+		if shouldIgnore(stemmed) {
 			continue
 		}
-		stemmedWordsSet[res] = struct{}{}
+
+		stemmedWordsSet[stemmed] = struct{}{}
 	}
 
 	stemmedWordsSlice := make([]string, 0, len(stemmedWordsSet))
@@ -42,54 +26,9 @@ func stem(s string) ([]string, error) {
 		stemmedWordsSlice = append(stemmedWordsSlice, v)
 	}
 
-	return stemmedWordsSlice, nil
+	return stemmedWordsSlice
 }
 
-func stemIgnore(word string) (string, bool, error) {
-	if isStopWord(word) {
-		return "", true, nil
-	}
-
-	return word, false, nil
-}
-
-func stemApostrophe(word string) (string, bool, error) {
-	ind := strings.Index(word, "'")
-	if ind < 0 {
-		return word, false, nil
-	}
-
-	_, ignore, err := stemIgnore(word[:ind])
-	if ignore || err != nil {
-		return "", true, err
-	}
-
-	return word, true, nil
-}
-
-func stemHyphen(word string) (string, bool, error) {
-	ind := strings.LastIndex(word, "-")
-	if ind < 0 {
-		return word, false, nil
-	}
-
-	stemmed, _, err := stemInternal(word[ind+1:])
-	if err != nil {
-		return "", true, err
-	}
-
-	return word[:ind+1] + stemmed, true, nil
-}
-
-func stemInternal(word string) (string, bool, error) {
-	stemmed, err := snowball.Stem(word, "english", false)
-	if err != nil {
-		return "", true, err
-	}
-
-	return stemmed, true, nil
-}
-
-func isStopWord(s string) bool {
+func shouldIgnore(s string) bool {
 	return len(s) <= 2 || english.IsStopWord(s)
 }
