@@ -1,4 +1,2 @@
 db_file: "database.json"
 source_url: "https://xkcd.com"
-req_timeout_sec: 1
-fetch_limit: 0

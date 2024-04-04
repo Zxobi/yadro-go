@@ -1,12 +1,12 @@
 package database
 
-type RecordMap map[int]Entity
+type RecordMap map[int]Record
 
-type Entity struct {
+type Record struct {
 	Url      string   `json:"url"`
 	Keywords []string `json:"keywords"`
 }
 
-func NewEntity(url string, keywords []string) Entity {
-	return Entity{Url: url, Keywords: keywords}
+func NewRecord(url string, keywords []string) Record {
+	return Record{Url: url, Keywords: keywords}
 }

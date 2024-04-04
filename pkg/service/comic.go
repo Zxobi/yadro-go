@@ -8,17 +8,24 @@ import (
 	"yadro-go/pkg/xkcd"
 )
 
+const BatchSize = 100
+
 type ComicsService struct {
-	db    database.IDatabase
-	c     xkcd.IClient
+	db    IDatabase
+	c     IClient
 	limit int
 }
 
-type IComicsService interface {
-	Fetch() error
+type IDatabase interface {
+	Read() database.RecordMap
+	Write(records database.RecordMap) error
 }
 
-func NewComicsService(c xkcd.IClient, db database.IDatabase, limit int) IComicsService {
+type IClient interface {
+	GetById(id int) (xkcd.Comic, error)
+}
+
+func NewComicsService(c IClient, db IDatabase, limit int) *ComicsService {
 	return &ComicsService{
 		db:    db,
 		c:     c,
@@ -27,18 +34,12 @@ func NewComicsService(c xkcd.IClient, db database.IDatabase, limit int) IComicsS
 }
 
 func (c *ComicsService) Fetch() error {
-	data, err := c.db.Read()
-	if err != nil {
-		return err
-	}
+	records := c.db.Read()
 
-	for i := 1; c.limit <= 0 || i <= c.limit; i++ {
+	for count, i := 1, len(records)+1; i <= c.limit; count, i = count+1, i+1 {
 		// comic with id 404 is always not found, skipping
 		if i == 404 {
-			continue
-		}
-
-		if _, ok := data[i]; ok {
+			records[i] = database.NewRecord("", []string{})
 			continue
 		}
 
@@ -50,13 +51,20 @@ func (c *ComicsService) Fetch() error {
 			return err
 		}
 
-		data[i] = makeEntity(comic)
+		records[i] = makeRecord(comic)
+		if count%BatchSize == 0 {
+			fmt.Println("Fetched", count, "new records")
+			if err = c.db.Write(records); err != nil {
+				return err
+			}
+		}
 	}
 
-	return c.db.Write(data)
+	fmt.Println("Fetch finished:", len(records), "records total")
+	return c.db.Write(records)
 }
 
-func makeEntity(comic xkcd.Comic) database.Entity {
-	stemmed := words.Stem(fmt.Sprintf("%s %s %s", comic.Title, comic.Alt, comic.Transcript))
-	return database.NewEntity(comic.Img, stemmed)
+func makeRecord(comic xkcd.Comic) database.Record {
+	stemmed := words.Stem(comic.Title + " " + comic.Alt + " " + comic.Transcript)
+	return database.NewRecord(comic.Img, stemmed)
 }

@@ -13,14 +13,14 @@ import (
 
 func main() {
 	cliOpt := cli.ReadCliOptions()
-	cfg, err := config.ReadConfig()
+	cfg, err := config.ReadConfig(cliOpt.C)
 	if err != nil {
 		exitWithErr(err)
 	}
 
 	client := xkcd.NewHttpClient(cfg.Url, cfg.ReqTimeout)
-	db := database.NewFileDatabase(cfg.DbFile)
-	if err = db.Init(); err != nil {
+	db, err := database.NewFileDatabase(cfg.DbFile)
+	if err != nil {
 		exitWithErr(err)
 	}
 	srv := service.NewComicsService(client, db, cfg.FetchLimit)
@@ -30,8 +30,10 @@ func main() {
 		return
 	}
 
-	if cliOpt.O {
-		printDb(cliOpt, db)
+	if cliOpt.O && cliOpt.N > 0 {
+		if err = printDb(db, cliOpt.N); err != nil {
+			exitWithErr(err)
+		}
 	}
 }
 
@@ -40,34 +42,13 @@ func exitWithErr(err error) {
 	os.Exit(1)
 }
 
-func printDb(opt cli.Options, db database.IDatabase) {
-	records, err := db.Read()
-	if err != nil {
-		exitWithErr(err)
+func printDb(db service.IDatabase, n int) error {
+	records := db.Read()
+
+	if n >= len(records) {
+		return printRecords(records)
 	}
 
-	if opt.N > 0 && opt.N < len(records) {
-		err = printNRecords(records, opt.N)
-	} else {
-		err = printRecords(records)
-	}
-
-	if err != nil {
-		exitWithErr(err)
-	}
-}
-
-func printRecords(records database.RecordMap) error {
-	data, err := json.MarshalIndent(records, "", "\t")
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(string(data))
-	return nil
-}
-
-func printNRecords(records database.RecordMap, n int) error {
 	printMap := make(database.RecordMap, n)
 	count := 0
 	for k, v := range records {
@@ -79,4 +60,14 @@ func printNRecords(records database.RecordMap, n int) error {
 	}
 
 	return printRecords(printMap)
+}
+
+func printRecords(records database.RecordMap) error {
+	data, err := json.MarshalIndent(records, "", "\t")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(data))
+	return nil
 }

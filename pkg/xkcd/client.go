@@ -25,11 +25,7 @@ type HttpClient struct {
 	url string
 }
 
-type IClient interface {
-	GetById(id int) (Comic, error)
-}
-
-func NewHttpClient(url string, timeout time.Duration) IClient {
+func NewHttpClient(url string, timeout time.Duration) *HttpClient {
 	c := http.Client{Timeout: timeout}
 	return &HttpClient{c, url}
 }
