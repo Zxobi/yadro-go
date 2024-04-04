@@ -7,11 +7,10 @@ import (
 )
 
 const (
-	optDbFile        = "db_file"
-	optSourceUrl     = "source_url"
-	optReqTimeout    = "req_timeout_sec"
-	optFetchLimit    = "fetch_limit"
-	optSaveBatchSize = "save_batch_size"
+	optDbFile     = "db_file"
+	optSourceUrl  = "source_url"
+	optReqTimeout = "req_timeout_sec"
+	optFetchLimit = "fetch_limit"
 )
 
 type Config struct {
@@ -31,17 +30,15 @@ func ReadConfig(path string) (Config, error) {
 	viper.SetDefault(optSourceUrl, "https://xkcd.com")
 	viper.SetDefault(optReqTimeout, math.MaxInt)
 	viper.SetDefault(optFetchLimit, math.MaxInt)
-	viper.SetDefault(optSaveBatchSize, math.MaxInt)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return Config{}, err
 	}
 
 	return Config{
-		DbFile:        viper.GetString(optDbFile),
-		Url:           viper.GetString(optSourceUrl),
-		ReqTimeout:    viper.GetDuration(optReqTimeout) * time.Second,
-		FetchLimit:    viper.GetInt(optFetchLimit),
-		SaveBatchSize: viper.GetInt(optSaveBatchSize),
+		DbFile:     viper.GetString(optDbFile),
+		Url:        viper.GetString(optSourceUrl),
+		ReqTimeout: viper.GetDuration(optReqTimeout) * time.Second,
+		FetchLimit: viper.GetInt(optFetchLimit),
 	}, nil
 }
