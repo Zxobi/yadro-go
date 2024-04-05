@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 )
 
@@ -43,11 +44,11 @@ func (db *FileDatabase) init() error {
 }
 
 func (db *FileDatabase) Read() RecordMap {
-	return makeCopy(db.records)
+	return maps.Clone(db.records)
 }
 
 func (db *FileDatabase) Write(records RecordMap) error {
-	cpy := makeCopy(records)
+	cpy := maps.Clone(records)
 
 	data, err := json.Marshal(cpy)
 	if err != nil {
@@ -78,13 +79,4 @@ func (db *FileDatabase) readFromFile() (RecordMap, error) {
 	}
 
 	return records, nil
-}
-
-func makeCopy(original RecordMap) RecordMap {
-	records := make(RecordMap, len(original))
-	for k, v := range original {
-		records[k] = v
-	}
-
-	return records
 }
