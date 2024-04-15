@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"yadro-go/pkg/cli"
 	"yadro-go/pkg/config"
 	"yadro-go/pkg/database"
@@ -23,9 +26,12 @@ func main() {
 	if err != nil {
 		exitWithErr(err)
 	}
-	srv := service.NewComicsService(client, db, cfg.FetchLimit)
+	srv := service.NewComicsService(client, db, cfg.FetchLimit, cfg.Parallel)
 
-	if err = srv.Fetch(); err != nil {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+
+	if err = srv.Fetch(ctx); err != nil {
 		exitWithErr(err)
 		return
 	}

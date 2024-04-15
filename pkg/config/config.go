@@ -11,6 +11,7 @@ const (
 	optSourceUrl  = "source_url"
 	optReqTimeout = "req_timeout_sec"
 	optFetchLimit = "fetch_limit"
+	optParallel   = "parallel"
 )
 
 type Config struct {
@@ -19,6 +20,7 @@ type Config struct {
 	ReqTimeout    time.Duration
 	FetchLimit    int
 	SaveBatchSize int
+	Parallel      int
 }
 
 func ReadConfig(path string) (Config, error) {
@@ -30,6 +32,7 @@ func ReadConfig(path string) (Config, error) {
 	viper.SetDefault(optSourceUrl, "https://xkcd.com")
 	viper.SetDefault(optReqTimeout, math.MaxInt)
 	viper.SetDefault(optFetchLimit, math.MaxInt)
+	viper.SetDefault(optParallel, 1)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return Config{}, err
@@ -40,5 +43,6 @@ func ReadConfig(path string) (Config, error) {
 		Url:        viper.GetString(optSourceUrl),
 		ReqTimeout: viper.GetDuration(optReqTimeout) * time.Second,
 		FetchLimit: viper.GetInt(optFetchLimit),
+		Parallel:   viper.GetInt(optParallel),
 	}, nil
 }
