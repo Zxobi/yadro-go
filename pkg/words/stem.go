@@ -1,4 +1,4 @@
-package main
+package words
 
 import (
 	"github.com/kljensen/snowball/english"
@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-func stem(s string) []string {
+func Stem(s string) []string {
 	words := strings.FieldsFunc(s, func(r rune) bool {
 		return !unicode.IsLetter(r)
 	})
