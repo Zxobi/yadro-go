@@ -30,29 +30,29 @@ func NewHttpClient(url string, timeout time.Duration) *HttpClient {
 	return &HttpClient{c, url}
 }
 
-func (xc *HttpClient) GetById(id int) (Comic, error) {
+func (xc *HttpClient) GetById(id int) (*Comic, error) {
 	resp, err := xc.doGet(xc.makeComicUrl(id))
 	if err != nil {
-		return Comic{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
-			return Comic{}, NotFound
+			return nil, NotFound
 		}
 
-		return Comic{}, UnexpectedStatus
+		return nil, UnexpectedStatus
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return Comic{}, err
+		return nil, err
 	}
 
 	comic, err := parseBody(body)
 	if err != nil {
-		return Comic{}, err
+		return nil, err
 	}
 
 	return comic, nil
@@ -77,7 +77,7 @@ func (xc *HttpClient) makeComicUrl(id int) string {
 	return fmt.Sprintf("%s/%d/info.0.json", xc.url, id)
 }
 
-func parseBody(b []byte) (Comic, error) {
+func parseBody(b []byte) (*Comic, error) {
 	comic := &Comic{}
-	return *comic, json.Unmarshal(b, comic)
+	return comic, json.Unmarshal(b, comic)
 }

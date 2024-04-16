@@ -7,6 +7,6 @@ type Record struct {
 	Keywords []string `json:"keywords"`
 }
 
-func NewRecord(url string, keywords []string) Record {
-	return Record{Url: url, Keywords: keywords}
+func NewRecord(url string, keywords []string) *Record {
+	return &Record{Url: url, Keywords: keywords}
 }

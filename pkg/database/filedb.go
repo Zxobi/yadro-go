@@ -26,7 +26,7 @@ func NewFileDatabase(fName string) (*FileDatabase, error) {
 
 	fdb.records = records
 
-	fmt.Println("Database initialized:", len(records), "records loaded")
+	fmt.Println("database initialized:", len(records), "records loaded")
 	return fdb, nil
 }
 
