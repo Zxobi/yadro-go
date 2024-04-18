@@ -2,6 +2,7 @@ package benching
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 	"yadro-go/pkg/database"
@@ -36,17 +37,17 @@ func BenchmarkFetchParallel800(b *testing.B) {
 type dbStub struct {
 }
 
-func (d *dbStub) Read() database.RecordMap {
+func (d *dbStub) Records() database.RecordMap {
 	return make(database.RecordMap)
 }
 
-func (d *dbStub) Write(_ database.RecordMap) error {
+func (d *dbStub) Save(_ database.RecordMap) error {
 	return nil
 }
 
 func fetch(parallel int) {
 	client := xkcd.NewHttpClient("https://xkcd.com", time.Minute)
-	srv := service.NewComicsService(client, &dbStub{}, 2000, parallel)
+	srv := service.NewComicsService(slog.Default(), client, &dbStub{}, 99999, parallel)
 
 	if err := srv.Fetch(context.Background()); err != nil {
 		panic(err)

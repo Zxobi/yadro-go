@@ -1,4 +1,4 @@
-package words
+package stem
 
 import (
 	"github.com/kljensen/snowball/english"

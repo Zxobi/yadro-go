@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"yadro-go/pkg/cli"
 	"yadro-go/pkg/config"
@@ -15,23 +17,31 @@ import (
 )
 
 func main() {
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+
 	cliOpt := cli.ReadCliOptions()
 	cfg, err := config.ReadConfig(cliOpt.C)
 	if err != nil {
 		exitWithErr(err)
 	}
 
+	log.Debug("config loaded", slog.Any("config", cfg))
+
 	client := xkcd.NewHttpClient(cfg.Url, cfg.ReqTimeout)
-	db, err := database.NewFileDatabase(cfg.DbFile)
+	db, err := database.NewFileDatabase(log, cfg.DbFile, cfg.IndexFile)
 	if err != nil {
+		log.Error("failed to create database", slog.Any("err", err))
 		exitWithErr(err)
 	}
-	srv := service.NewComicsService(client, db, cfg.FetchLimit, cfg.Parallel)
+	srv := service.NewComicsService(log, client, db, cfg.FetchLimit, cfg.Parallel)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
 	if err = srv.Fetch(ctx); err != nil {
+		log.Error("failed to fetch records", slog.Any("err", err))
 		exitWithErr(err)
 		return
 	}
@@ -41,6 +51,21 @@ func main() {
 			exitWithErr(err)
 		}
 	}
+
+	if cliOpt.S != "" {
+		scanner := service.NewScanner(log, db, db)
+		scanCtx, scanCancel := context.WithTimeout(ctx, cfg.ScanTimeout)
+		defer scanCancel()
+
+		matches := scanner.Scan(scanCtx, cliOpt.S, cliOpt.I)
+		if len(matches) == 0 {
+			return
+		} else if len(matches) > cfg.ScanLimit {
+			matches = matches[:cfg.ScanLimit]
+		}
+
+		fmt.Println(strings.Join(matches, "\n"))
+	}
 }
 
 func exitWithErr(err error) {
@@ -48,8 +73,8 @@ func exitWithErr(err error) {
 	os.Exit(1)
 }
 
-func printDb(db service.IDatabase, n int) error {
-	records := db.Read()
+func printDb(db service.RecordRepository, n int) error {
+	records := db.Records()
 
 	if n >= len(records) {
 		return printRecords(records)

@@ -1,6 +1,7 @@
 package database
 
 type RecordMap map[int]Record
+type IndexMap map[string][]int
 
 type Record struct {
 	Url      string   `json:"url"`
