@@ -101,6 +101,8 @@ func (db *FileDatabase) Save(records RecordMap) error {
 		return err
 	}
 
+	db.index = index
+
 	db.log.Debug("index save complete")
 
 	return nil
