@@ -34,7 +34,7 @@ func ReadConfig(path string) (Config, error) {
 	viper.AddConfigPath(path)
 
 	viper.SetDefault(optDbFile, "database.json")
-	viper.SetDefault(optIndexFile, "database_index.json")
+	viper.SetDefault(optIndexFile, "index.json")
 	viper.SetDefault(optSourceUrl, "https://xkcd.com")
 	viper.SetDefault(optReqTimeout, math.MaxInt)
 	viper.SetDefault(optFetchLimit, math.MaxInt)

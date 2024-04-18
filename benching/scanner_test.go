@@ -24,7 +24,7 @@ var (
 
 func init() {
 	log := slog.New(logger.EmptyHandler{})
-	fileDb, err := database.NewFileDatabase(log, "database.json", "database_index.json")
+	fileDb, err := database.NewFileDatabase(log, "database.json", "index.json")
 	if err != nil {
 		panic(err)
 	}
