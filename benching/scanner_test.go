@@ -40,25 +40,37 @@ func init() {
 }
 
 func BenchmarkScanNoIndexQuerySmall(b *testing.B) {
-	scanner.Scan(context.Background(), querySmall, false)
+	for i := 0; i < b.N; i++ {
+		scanner.Scan(context.Background(), querySmall, false)
+	}
 }
 
 func BenchmarkScanNoIndexQueryMedium(b *testing.B) {
-	scanner.Scan(context.Background(), queryMedium, false)
+	for i := 0; i < b.N; i++ {
+		scanner.Scan(context.Background(), queryMedium, false)
+	}
 }
 
 func BenchmarkScanNoIndexQueryLarge(b *testing.B) {
-	scanner.Scan(context.Background(), queryLarge, false)
+	for i := 0; i < b.N; i++ {
+		scanner.Scan(context.Background(), queryLarge, false)
+	}
 }
 
 func BenchmarkScanIndexQuerySmall(b *testing.B) {
-	scanner.Scan(context.Background(), querySmall, true)
+	for i := 0; i < b.N; i++ {
+		scanner.Scan(context.Background(), querySmall, true)
+	}
 }
 
 func BenchmarkScanIndexQueryMedium(b *testing.B) {
-	scanner.Scan(context.Background(), queryMedium, true)
+	for i := 0; i < b.N; i++ {
+		scanner.Scan(context.Background(), queryMedium, true)
+	}
 }
 
 func BenchmarkScanIndexQueryLarge(b *testing.B) {
-	scanner.Scan(context.Background(), queryLarge, true)
+	for i := 0; i < b.N; i++ {
+		scanner.Scan(context.Background(), queryLarge, true)
+	}
 }

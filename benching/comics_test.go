@@ -11,27 +11,39 @@ import (
 )
 
 func BenchmarkFetchParallel20(b *testing.B) {
-	fetch(20)
+	for i := 0; i < b.N; i++ {
+		fetch(20)
+	}
 }
 
 func BenchmarkFetchParallel50(b *testing.B) {
-	fetch(50)
+	for i := 0; i < b.N; i++ {
+		fetch(50)
+	}
 }
 
 func BenchmarkFetchParallel100(b *testing.B) {
-	fetch(100)
+	for i := 0; i < b.N; i++ {
+		fetch(100)
+	}
 }
 
 func BenchmarkFetchParallel200(b *testing.B) {
-	fetch(200)
+	for i := 0; i < b.N; i++ {
+		fetch(200)
+	}
 }
 
 func BenchmarkFetchParallel400(b *testing.B) {
-	fetch(400)
+	for i := 0; i < b.N; i++ {
+		fetch(400)
+	}
 }
 
 func BenchmarkFetchParallel800(b *testing.B) {
-	fetch(800)
+	for i := 0; i < b.N; i++ {
+		fetch(800)
+	}
 }
 
 type dbStub struct {
