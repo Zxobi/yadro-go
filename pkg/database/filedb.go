@@ -114,14 +114,7 @@ func (db *FileDatabase) buildIndex() IndexMap {
 	index := make(IndexMap)
 	for num, record := range db.records {
 		for _, keyword := range record.Keywords {
-			nums, ok := index[keyword]
-			if ok {
-				nums = append(nums, num)
-			} else {
-				nums = []int{num}
-			}
-
-			index[keyword] = nums
+			index[keyword] = append(index[keyword], num)
 		}
 	}
 
