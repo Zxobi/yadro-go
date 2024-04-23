@@ -4,67 +4,127 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"maps"
 	"os"
 )
 
 type FileDatabase struct {
-	filename string
-	records  RecordMap
+	log           *slog.Logger
+	dbFilename    string
+	indexFilename string
+	records       RecordMap
+	index         IndexMap
 }
 
-func NewFileDatabase(fName string) (*FileDatabase, error) {
-	fdb := &FileDatabase{filename: fName}
+func NewFileDatabase(log *slog.Logger, dbFilename string, indexFilename string) (*FileDatabase, error) {
+	fdb := &FileDatabase{
+		log:           log,
+		dbFilename:    dbFilename,
+		indexFilename: indexFilename,
+	}
 	if err := fdb.init(); err != nil {
 		return nil, err
 	}
 
-	records, err := fdb.readFromFile()
-	if err != nil {
-		return nil, err
-	}
-
-	fdb.records = records
-
-	fmt.Println("database initialized:", len(records), "records loaded")
+	log.Info(
+		fmt.Sprintf("database initialized: %d records loaded, index size %d", len(fdb.records), len(fdb.index)))
 	return fdb, nil
 }
 
 func (db *FileDatabase) init() error {
-	if _, err := os.Stat(db.filename); !errors.Is(err, os.ErrNotExist) {
+	if err := errors.Join(
+		checkCreateFile(db.dbFilename),
+		checkCreateFile(db.indexFilename),
+	); err != nil {
 		return err
 	}
 
-	file, err := os.Create(db.filename)
+	records, err := db.readRecordsFromFile()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	index, err := db.readIndexFromFile()
+	if err != nil {
+		return err
+	}
+
+	db.records = records
+	db.index = index
 	return nil
 }
 
-func (db *FileDatabase) Read() RecordMap {
-	return maps.Clone(db.records)
-}
-
-func (db *FileDatabase) Write(records RecordMap) error {
-	cpy := maps.Clone(records)
-
-	data, err := json.Marshal(cpy)
-	if err != nil {
+func checkCreateFile(path string) error {
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 
-	if err = os.WriteFile(db.filename, data, 0644); err != nil {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	_ = file.Close()
+	return nil
+}
+
+func (db *FileDatabase) Records() RecordMap {
+	return maps.Clone(db.records)
+}
+
+func (db *FileDatabase) Index() IndexMap {
+	return maps.Clone(db.index)
+}
+
+func (db *FileDatabase) Save(records RecordMap) error {
+	db.log.Debug("saving records")
+
+	cpy := maps.Clone(records)
+
+	recordJson, err := json.Marshal(cpy)
+	if err != nil {
+		return err
+	}
+	if err = os.WriteFile(db.dbFilename, recordJson, 0644); err != nil {
 		return err
 	}
 
 	db.records = cpy
+
+	db.log.Debug("records save complete")
+
+	index := db.buildIndex()
+	indexJson, err := json.Marshal(index)
+	if err != nil {
+		return err
+	}
+	if err = os.WriteFile(db.indexFilename, indexJson, 0644); err != nil {
+		return err
+	}
+
+	db.index = index
+
+	db.log.Debug("index save complete")
+
 	return nil
 }
 
-func (db *FileDatabase) readFromFile() (RecordMap, error) {
-	data, err := os.ReadFile(db.filename)
+func (db *FileDatabase) buildIndex() IndexMap {
+	db.log.Debug("building index")
+
+	index := make(IndexMap)
+	for num, record := range db.records {
+		for _, keyword := range record.Keywords {
+			index[keyword] = append(index[keyword], num)
+		}
+	}
+
+	db.log.Debug("index build complete")
+
+	return index
+}
+
+func (db *FileDatabase) readRecordsFromFile() (RecordMap, error) {
+	data, err := os.ReadFile(db.dbFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -79,4 +139,22 @@ func (db *FileDatabase) readFromFile() (RecordMap, error) {
 	}
 
 	return records, nil
+}
+
+func (db *FileDatabase) readIndexFromFile() (IndexMap, error) {
+	data, err := os.ReadFile(db.indexFilename)
+	if err != nil {
+		return nil, err
+	}
+
+	index := make(IndexMap)
+	if len(data) == 0 {
+		return index, nil
+	}
+
+	if err = json.Unmarshal(data, &index); err != nil {
+		return nil, err
+	}
+
+	return index, nil
 }

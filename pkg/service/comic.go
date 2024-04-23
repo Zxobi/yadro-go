@@ -4,30 +4,33 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"yadro-go/pkg/database"
-	"yadro-go/pkg/words"
+	"yadro-go/pkg/stem"
 	"yadro-go/pkg/xkcd"
 )
 
 type ComicsService struct {
-	db       IDatabase
-	c        IClient
+	log      *slog.Logger
+	db       RecordRepository
+	c        ComicProvider
 	limit    int
 	parallel int
 }
 
-type IDatabase interface {
-	Read() database.RecordMap
-	Write(records database.RecordMap) error
+type RecordRepository interface {
+	Records() database.RecordMap
+	Save(records database.RecordMap) error
 }
 
-type IClient interface {
+type ComicProvider interface {
 	GetById(id int) (*xkcd.Comic, error)
 }
 
-func NewComicsService(c IClient, db IDatabase, limit int, parallel int) *ComicsService {
+func NewComicsService(log *slog.Logger, c ComicProvider, db RecordRepository, limit int, parallel int) *ComicsService {
 	return &ComicsService{
+		log:      log,
 		db:       db,
 		c:        c,
 		limit:    limit,
@@ -43,8 +46,8 @@ func (c *ComicsService) Fetch(ctx context.Context) error {
 	comics := make(chan *xkcd.Comic, c.parallel)
 	errs := make(chan error, c.parallel)
 
-	records := c.db.Read()
-	fmt.Println("start fetching with initial db size", len(records))
+	records := c.db.Records()
+	c.log.Info(fmt.Sprintf("start fetching with initial db size %d", len(records)))
 
 	fetchId := 1
 	pushId := func() bool {
@@ -63,7 +66,7 @@ func (c *ComicsService) Fetch(ctx context.Context) error {
 	for i := 0; i < c.parallel; i++ {
 		if !pushId() {
 			if i == 0 {
-				fmt.Println("fetch finished: nothing to fetch")
+				slog.Info("fetch finished: nothing to fetch")
 				cancel()
 				return nil
 			}
@@ -89,12 +92,12 @@ func (c *ComicsService) Fetch(ctx context.Context) error {
 			}
 		case workerErr := <-errs:
 			if !errors.Is(workerErr, xkcd.NotFound) {
-				fmt.Println("finishing fetching due to worker error")
+				slog.Debug("finishing fetching due to worker error")
 				err = workerErr
 			}
 			loop = false
 		case <-ctx.Done():
-			fmt.Println("finishing fetching due to context closure")
+			slog.Debug("finishing fetching due to context closure")
 			loop = false
 		}
 	}
@@ -107,13 +110,12 @@ func (c *ComicsService) Fetch(ctx context.Context) error {
 		records[comic.Num] = *makeRecord(comic)
 	}
 
-	fmt.Println("fetch finished with", newCount, "new records")
+	c.log.Info(fmt.Sprintf("fetch finished: %d new records", newCount))
 	if newCount == 0 {
 		return err
 	}
 
-	fmt.Println("saving records")
-	dbErr := c.db.Write(records)
+	dbErr := c.db.Save(records)
 	return errors.Join(err, dbErr)
 }
 
@@ -138,6 +140,6 @@ func (c *ComicsService) fetchJob(ctx context.Context, ids <-chan int, comics cha
 }
 
 func makeRecord(comic *xkcd.Comic) *database.Record {
-	stemmed := words.Stem(comic.Title + " " + comic.Alt + " " + comic.Transcript)
+	stemmed := stem.Stem(comic.Title + " " + comic.Alt + " " + comic.Transcript)
 	return database.NewRecord(comic.Img, stemmed)
 }
