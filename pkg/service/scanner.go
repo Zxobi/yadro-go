@@ -77,7 +77,7 @@ func (s *Scanner) scanRecords(ctx context.Context, words []string) []string {
 	}
 
 	s.log.Info(fmt.Sprintf("scan finished: found %d matches", len(matches)))
-	return finalizeResult(s.rp.Records(), matches)
+	return finalizeResult(records, matches)
 }
 
 func (s *Scanner) scanIndex(ctx context.Context, words []string) []string {
