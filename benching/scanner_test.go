@@ -39,38 +39,38 @@ func init() {
 	scanner = service.NewScanner(log, fileDb, fileDb)
 }
 
-func BenchmarkScanNoIndexQuerySmall(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		scanner.Scan(context.Background(), querySmall, false)
-	}
+func BenchmarkScanNoIndex(b *testing.B) {
+	b.Run("query_small", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			scanner.Scan(context.Background(), querySmall, false)
+		}
+	})
+	b.Run("query_medium", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			scanner.Scan(context.Background(), queryMedium, false)
+		}
+	})
+	b.Run("query_large", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			scanner.Scan(context.Background(), queryLarge, false)
+		}
+	})
 }
 
-func BenchmarkScanNoIndexQueryMedium(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		scanner.Scan(context.Background(), queryMedium, false)
-	}
-}
-
-func BenchmarkScanNoIndexQueryLarge(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		scanner.Scan(context.Background(), queryLarge, false)
-	}
-}
-
-func BenchmarkScanIndexQuerySmall(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		scanner.Scan(context.Background(), querySmall, true)
-	}
-}
-
-func BenchmarkScanIndexQueryMedium(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		scanner.Scan(context.Background(), queryMedium, true)
-	}
-}
-
-func BenchmarkScanIndexQueryLarge(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		scanner.Scan(context.Background(), queryLarge, true)
-	}
+func BenchmarkScanIndex(b *testing.B) {
+	b.Run("query_small", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			scanner.Scan(context.Background(), querySmall, true)
+		}
+	})
+	b.Run("query_medium", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			scanner.Scan(context.Background(), queryMedium, true)
+		}
+	})
+	b.Run("query_large", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			scanner.Scan(context.Background(), queryLarge, true)
+		}
+	})
 }
