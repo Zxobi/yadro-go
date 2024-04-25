@@ -7,13 +7,12 @@ import (
 	"time"
 	"yadro-go/benching/logger"
 	"yadro-go/internal/database"
-	service2 "yadro-go/internal/service"
+	"yadro-go/internal/service"
 	"yadro-go/internal/xkcd"
-	"yadro-go/pkg/service"
 )
 
 var (
-	scanner     *service2.Scanner
+	scanner     *service.Scanner
 	querySmall  = "I'm following your questions"
 	queryMedium = "The dedicated follower carried a bottle of water to quench his thirst during the long hike"
 	queryLarge  = "The quick brown fox jumps over the lazy dog. " +
@@ -31,13 +30,13 @@ func init() {
 	}
 
 	client := xkcd.NewHttpClient("https://xkcd.com", time.Minute)
-	srv := service.NewComicsService(log, client, fileDb, 99999, 200)
+	srv := service.NewUpdater(log, client, fileDb, 99999, 200)
 
-	if err = srv.Fetch(context.Background()); err != nil {
+	if _, err = srv.Update(context.Background()); err != nil {
 		panic(err)
 	}
 
-	scanner = service2.NewScanner(log, fileDb, fileDb)
+	scanner = service.NewScanner(log, fileDb, fileDb)
 }
 
 func BenchmarkScanNoIndex(b *testing.B) {
