@@ -9,11 +9,11 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"yadro-go/internal/database"
+	"yadro-go/internal/service"
+	"yadro-go/internal/xkcd"
 	"yadro-go/pkg/cli"
 	"yadro-go/pkg/config"
-	"yadro-go/pkg/database"
-	"yadro-go/pkg/service"
-	"yadro-go/pkg/xkcd"
 )
 
 func main() {
@@ -35,12 +35,12 @@ func main() {
 		log.Error("failed to create database", slog.Any("err", err))
 		exitWithErr(err)
 	}
-	srv := service.NewComicsService(log, client, db, cfg.FetchLimit, cfg.Parallel)
+	srv := service.NewUpdater(log, client, db, cfg.FetchLimit, cfg.Parallel)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
-	if err = srv.Fetch(ctx); err != nil {
+	if err = srv.Update(ctx); err != nil {
 		log.Error("failed to fetch records", slog.Any("err", err))
 		exitWithErr(err)
 		return

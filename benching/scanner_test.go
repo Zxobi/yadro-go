@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 	"yadro-go/benching/logger"
-	"yadro-go/pkg/database"
+	"yadro-go/internal/database"
+	service2 "yadro-go/internal/service"
+	"yadro-go/internal/xkcd"
 	"yadro-go/pkg/service"
-	"yadro-go/pkg/xkcd"
 )
 
 var (
-	scanner     *service.Scanner
+	scanner     *service2.Scanner
 	querySmall  = "I'm following your questions"
 	queryMedium = "The dedicated follower carried a bottle of water to quench his thirst during the long hike"
 	queryLarge  = "The quick brown fox jumps over the lazy dog. " +
@@ -36,7 +37,7 @@ func init() {
 		panic(err)
 	}
 
-	scanner = service.NewScanner(log, fileDb, fileDb)
+	scanner = service2.NewScanner(log, fileDb, fileDb)
 }
 
 func BenchmarkScanNoIndex(b *testing.B) {

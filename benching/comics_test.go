@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 	"yadro-go/benching/logger"
-	"yadro-go/pkg/database"
+	"yadro-go/internal/database"
+	"yadro-go/internal/xkcd"
 	"yadro-go/pkg/service"
-	"yadro-go/pkg/xkcd"
 )
 
 func BenchmarkFetchParallel(b *testing.B) {
