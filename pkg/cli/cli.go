@@ -5,6 +5,8 @@ import (
 	"math"
 )
 
+var DefaultPort = 20202
+
 const flagO = "o"
 const flagN = "n"
 const flagC = "c"
@@ -25,7 +27,7 @@ func ReadCliOptions() (opt Options) {
 	flag.BoolVar(&opt.O, flagO, false, "print to stdout")
 	flag.BoolVar(&opt.I, flagI, false, "use index")
 	flag.IntVar(&opt.N, flagN, math.MaxInt, "shorten output to [n] records")
-	flag.IntVar(&opt.Port, flagPort, math.MaxInt, "port for webserver")
+	flag.IntVar(&opt.Port, flagPort, DefaultPort, "port for webserver")
 	flag.StringVar(&opt.C, flagC, ".", "path to search for config")
 	flag.StringVar(&opt.S, flagS, "", "query string")
 	flag.Parse()

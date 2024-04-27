@@ -14,6 +14,7 @@ import (
 	"yadro-go/internal/xkcd"
 	"yadro-go/pkg/cli"
 	"yadro-go/pkg/config"
+	"yadro-go/pkg/logger"
 )
 
 func main() {
@@ -32,7 +33,7 @@ func main() {
 	client := xkcd.NewHttpClient(cfg.Url, cfg.ReqTimeout)
 	db, err := database.NewFileDatabase(log, cfg.DbFile, cfg.IndexFile)
 	if err != nil {
-		log.Error("failed to create database", slog.Any("err", err))
+		log.Error("failed to create database", logger.Err(err))
 		exitWithErr(err)
 	}
 	srv := service.NewUpdater(log, client, db, cfg.FetchLimit, cfg.Parallel)
@@ -40,8 +41,9 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
-	if err = srv.Update(ctx); err != nil {
-		log.Error("failed to fetch records", slog.Any("err", err))
+	_, err = srv.Update(ctx)
+	if err != nil {
+		log.Error("failed to update records", logger.Err(err))
 		exitWithErr(err)
 		return
 	}

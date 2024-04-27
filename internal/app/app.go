@@ -18,7 +18,7 @@ import (
 
 func Run(logger *slog.Logger, cfg *config.Config) error {
 	const op = "app.Run"
-	log := logger.With(slog.String(op, op))
+	log := logger.With(slog.String("op", op))
 
 	db, err := database.NewFileDatabase(logger, cfg.DbFile, cfg.IndexFile)
 	if err != nil {

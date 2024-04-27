@@ -20,6 +20,10 @@ func main() {
 		exitWithErr(err)
 	}
 
+	if cliOpt.Port != cli.DefaultPort {
+		cfg.Port = cliOpt.Port
+	}
+
 	log.Debug("config loaded", slog.Any("config", cfg))
 
 	if err = app.Run(log, cfg); err != nil {
