@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 	"yadro-go/benching/logger"
-	"yadro-go/pkg/database"
-	"yadro-go/pkg/service"
-	"yadro-go/pkg/xkcd"
+	"yadro-go/internal/database"
+	"yadro-go/internal/service"
+	"yadro-go/internal/xkcd"
 )
 
 var (
@@ -30,9 +30,9 @@ func init() {
 	}
 
 	client := xkcd.NewHttpClient("https://xkcd.com", time.Minute)
-	srv := service.NewComicsService(log, client, fileDb, 99999, 200)
+	srv := service.NewUpdater(log, client, fileDb, 99999, 200)
 
-	if err = srv.Fetch(context.Background()); err != nil {
+	if _, err = srv.Update(context.Background()); err != nil {
 		panic(err)
 	}
 

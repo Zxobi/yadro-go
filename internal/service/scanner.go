@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"yadro-go/pkg/database"
-	"yadro-go/pkg/stem"
+	"yadro-go/internal/database"
+	"yadro-go/pkg/stemmer"
 )
 
 type Scanner struct {
@@ -37,7 +37,7 @@ func NewScanner(log *slog.Logger, rp RecordProvider, ip IndexProvider) *Scanner 
 }
 
 func (s *Scanner) Scan(ctx context.Context, query string, useIndex bool) []string {
-	words := stem.Stem(query)
+	words := stemmer.Stem(query)
 
 	if useIndex {
 		return s.scanIndex(ctx, words)

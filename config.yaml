@@ -1,3 +1,8 @@
 db_file: "database.json"
 source_url: "https://xkcd.com"
 parallel: 200
+fetch_limit: 5000
+scheduler_hour: 3
+scheduler_minute: 0
+scan_timeout: 5s
+scan_limit: 10

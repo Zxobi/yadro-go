@@ -1,4 +1,4 @@
-package stem
+package stemmer
 
 import (
 	"github.com/kljensen/snowball/english"
