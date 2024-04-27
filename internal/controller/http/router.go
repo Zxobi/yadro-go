@@ -47,13 +47,8 @@ func NewRouter(log *slog.Logger, handler *http.ServeMux, scanner QueryScanner, u
 		opt(r)
 	}
 
-	handler.HandleFunc("/*", r.NotFound)
-	handler.HandleFunc("/update", r.Update)
-	handler.HandleFunc("/pics", r.Pics)
-}
-
-func (r *router) NotFound(w http.ResponseWriter, _ *http.Request) {
-	responseError(w, http.StatusNotFound, "not found")
+	handler.HandleFunc("POST /update", r.Update)
+	handler.HandleFunc("GET /pics", r.Pics)
 }
 
 func (r *router) Update(w http.ResponseWriter, req *http.Request) {
@@ -61,11 +56,6 @@ func (r *router) Update(w http.ResponseWriter, req *http.Request) {
 	log := r.log.With(slog.String("op", op))
 
 	log.Debug("handle update")
-
-	if req.Method != http.MethodPost {
-		responseError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
 
 	total, err := r.updater.Update(req.Context())
 	if err != nil {
@@ -90,10 +80,6 @@ func (r *router) Pics(w http.ResponseWriter, req *http.Request) {
 
 	log.Debug("handle search")
 
-	if req.Method != http.MethodGet {
-		responseError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
 	if err := req.ParseForm(); err != nil {
 		log.Error("failed to parse form", logger.Err(err))
 		responseError(w, http.StatusBadRequest, "bad request")
