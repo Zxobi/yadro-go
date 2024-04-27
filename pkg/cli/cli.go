@@ -5,14 +5,16 @@ import (
 	"math"
 )
 
-var DefaultPort = 20202
+const (
+	DefaultPort = 20202
 
-const flagO = "o"
-const flagN = "n"
-const flagC = "c"
-const flagS = "s"
-const flagI = "i"
-const flagPort = "port"
+	flagO    = "o"
+	flagN    = "n"
+	flagC    = "c"
+	flagS    = "s"
+	flagI    = "i"
+	flagPort = "port"
+)
 
 type Options struct {
 	O    bool
