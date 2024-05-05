@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	optDbFile          = "db_file"
-	optIndexFile       = "index_file"
+	optDsn             = "dsn"
 	optSourceUrl       = "source_url"
+	optMigrations      = "migrations"
 	optReqTimeout      = "req_timeout_sec"
 	optFetchLimit      = "fetch_limit"
 	optParallel        = "parallel"
@@ -21,10 +21,9 @@ const (
 )
 
 type Config struct {
-	DbFile          string
-	IndexFile       string
+	Dsn             string
 	Url             string
-	UpdateCron      string
+	Migrations      string
 	FetchLimit      int
 	Parallel        int
 	ScanLimit       int
@@ -40,8 +39,6 @@ func ReadConfig(path string) (*Config, error) {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(path)
 
-	viper.SetDefault(optDbFile, "database.json")
-	viper.SetDefault(optIndexFile, "index.json")
 	viper.SetDefault(optSourceUrl, "https://xkcd.com")
 	viper.SetDefault(optSchedulerHour, 3)
 	viper.SetDefault(optSchedulerMinute, 0)
@@ -51,15 +48,17 @@ func ReadConfig(path string) (*Config, error) {
 	viper.SetDefault(optScanTimeout, math.MaxInt)
 	viper.SetDefault(optScanLimit, 10)
 	viper.SetDefault(optPort, 20202)
+	viper.SetDefault(optDsn, "database.db")
+	viper.SetDefault(optMigrations, "migrations")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
 	}
 
 	return &Config{
-		DbFile:          viper.GetString(optDbFile),
-		IndexFile:       viper.GetString(optIndexFile),
+		Dsn:             viper.GetString(optDsn),
 		Url:             viper.GetString(optSourceUrl),
+		Migrations:      viper.GetString(optMigrations),
 		FetchLimit:      viper.GetInt(optFetchLimit),
 		ScanLimit:       viper.GetInt(optScanLimit),
 		Parallel:        viper.GetInt(optParallel),

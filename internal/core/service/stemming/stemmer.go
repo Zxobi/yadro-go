@@ -1,13 +1,25 @@
-package stemmer
+package stemming
 
 import (
 	"github.com/kljensen/snowball/english"
 	"strings"
 	"unicode"
+	"yadro-go/internal/core/domain"
 )
 
-func Stem(s string) []string {
-	words := strings.FieldsFunc(s, func(r rune) bool {
+type Stemmer struct {
+}
+
+func New() *Stemmer {
+	return &Stemmer{}
+}
+
+func (s *Stemmer) StemComic(comic *domain.Comic) []string {
+	return s.StemString(comic.Title + " " + comic.Alt + " " + comic.Transcript)
+}
+
+func (s *Stemmer) StemString(str string) []string {
+	words := strings.FieldsFunc(str, func(r rune) bool {
 		return !unicode.IsLetter(r)
 	})
 
@@ -27,6 +39,7 @@ func Stem(s string) []string {
 	}
 
 	return stemmedWordsSlice
+
 }
 
 func shouldIgnore(s string) bool {

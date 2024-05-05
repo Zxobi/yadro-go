@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
-	"yadro-go/internal/service"
+	"yadro-go/internal/core/service"
 	"yadro-go/pkg/logger"
 )
 
@@ -27,7 +27,7 @@ type router struct {
 }
 
 type QueryScanner interface {
-	Scan(ctx context.Context, query string, useIndex bool) []string
+	Scan(ctx context.Context, query string, useIndex bool) ([]string, error)
 }
 
 type Updater interface {
@@ -93,7 +93,12 @@ func (r *router) Pics(w http.ResponseWriter, req *http.Request) {
 	search := req.FormValue(formSearch)
 	ctx, cancel := context.WithTimeout(req.Context(), r.scanTimeout)
 	defer cancel()
-	res := r.scanner.Scan(ctx, search, true)
+	res, err := r.scanner.Scan(ctx, search, true)
+	if err != nil {
+		log.Error("scan error")
+		responseError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
 
 	if ctx.Err() != nil {
 		log.Error("scan timeout exceeded")
@@ -105,7 +110,7 @@ func (r *router) Pics(w http.ResponseWriter, req *http.Request) {
 		res = res[:r.scanLimit]
 	}
 
-	if err := responseJson(w, res); err != nil {
+	if err = responseJson(w, res); err != nil {
 		log.Error("failed to response", logger.Err(err))
 	}
 }

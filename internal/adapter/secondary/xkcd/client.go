@@ -7,18 +7,11 @@ import (
 	"io"
 	"net/http"
 	"time"
+	"yadro-go/internal/core/domain"
 )
 
 var NotFound = errors.New("client: comic not found")
 var UnexpectedStatus = errors.New("client: unexpected status")
-
-type Comic struct {
-	Num        int    `json:"num"`
-	Title      string `json:"title"`
-	Transcript string `json:"transcript"`
-	Alt        string `json:"alt"`
-	Img        string `json:"img"`
-}
 
 type HttpClient struct {
 	c   http.Client
@@ -30,7 +23,7 @@ func NewHttpClient(url string, timeout time.Duration) *HttpClient {
 	return &HttpClient{c, url}
 }
 
-func (xc *HttpClient) GetById(id int) (*Comic, error) {
+func (xc *HttpClient) GetById(id int) (*domain.Comic, error) {
 	resp, err := xc.doGet(xc.makeComicUrl(id))
 	if err != nil {
 		return nil, err
@@ -77,7 +70,7 @@ func (xc *HttpClient) makeComicUrl(id int) string {
 	return fmt.Sprintf("%s/%d/info.0.json", xc.url, id)
 }
 
-func parseBody(b []byte) (*Comic, error) {
-	comic := &Comic{}
+func parseBody(b []byte) (*domain.Comic, error) {
+	comic := &domain.Comic{}
 	return comic, json.Unmarshal(b, comic)
 }

@@ -6,9 +6,12 @@ import (
 	"testing"
 	"time"
 	"yadro-go/benching/logger"
-	"yadro-go/internal/database"
-	"yadro-go/internal/service"
-	"yadro-go/internal/xkcd"
+	"yadro-go/internal/adapter/secondary/repository"
+	"yadro-go/internal/adapter/secondary/xkcd"
+	"yadro-go/internal/core/service"
+	"yadro-go/internal/core/service/stemming"
+	logutil "yadro-go/pkg/logger"
+	"yadro-go/pkg/sqlite"
 )
 
 var (
@@ -24,35 +27,48 @@ var (
 
 func init() {
 	log := slog.New(logger.EmptyHandler{})
-	fileDb, err := database.NewFileDatabase(log, "database.json", "index.json")
+
+	sqliteDb := sqlite.SQLite{}
+	db, err := sqliteDb.Connect("test.db")
 	if err != nil {
+		log.Error("failed to connect to sqlite", logutil.Err(err))
 		panic(err)
 	}
+
+	comicsRepo := repository.NewComicRepository(log, db)
+	keywordsRepo := repository.NewKeywordRepository(log, db)
+	stemmer := stemming.New()
 
 	client := xkcd.NewHttpClient("https://xkcd.com", time.Minute)
-	srv := service.NewUpdater(log, client, fileDb, 99999, 200)
+	updater := service.NewUpdater(log, stemmer, comicsRepo, keywordsRepo, client, 2000, 200)
 
-	if _, err = srv.Update(context.Background()); err != nil {
+	if _, err = updater.Update(context.Background()); err != nil {
 		panic(err)
 	}
 
-	scanner = service.NewScanner(log, fileDb, fileDb)
+	scanner = service.NewScanner(log, stemmer, comicsRepo, keywordsRepo)
 }
 
 func BenchmarkScanNoIndex(b *testing.B) {
 	b.Run("query_small", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			scanner.Scan(context.Background(), querySmall, false)
+			if _, err := scanner.Scan(context.Background(), querySmall, false); err != nil {
+				b.Error(err)
+			}
 		}
 	})
 	b.Run("query_medium", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			scanner.Scan(context.Background(), queryMedium, false)
+			if _, err := scanner.Scan(context.Background(), queryMedium, false); err != nil {
+				b.Error(err)
+			}
 		}
 	})
 	b.Run("query_large", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			scanner.Scan(context.Background(), queryLarge, false)
+			if _, err := scanner.Scan(context.Background(), queryLarge, false); err != nil {
+				b.Error(err)
+			}
 		}
 	})
 }
@@ -60,17 +76,23 @@ func BenchmarkScanNoIndex(b *testing.B) {
 func BenchmarkScanIndex(b *testing.B) {
 	b.Run("query_small", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			scanner.Scan(context.Background(), querySmall, true)
+			if _, err := scanner.Scan(context.Background(), querySmall, true); err != nil {
+				b.Error(err)
+			}
 		}
 	})
 	b.Run("query_medium", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			scanner.Scan(context.Background(), queryMedium, true)
+			if _, err := scanner.Scan(context.Background(), queryMedium, true); err != nil {
+				b.Error(err)
+			}
 		}
 	})
 	b.Run("query_large", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			scanner.Scan(context.Background(), queryLarge, true)
+			if _, err := scanner.Scan(context.Background(), queryLarge, true); err != nil {
+				b.Error(err)
+			}
 		}
 	})
 }

@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 	"yadro-go/benching/logger"
-	"yadro-go/internal/database"
-	"yadro-go/internal/service"
-	"yadro-go/internal/xkcd"
+	"yadro-go/internal/adapter/secondary/xkcd"
+	"yadro-go/internal/core/domain"
+	"yadro-go/internal/core/service"
+	"yadro-go/internal/core/service/stemming"
 )
 
 func BenchmarkFetchParallel(b *testing.B) {
@@ -74,20 +75,35 @@ func BenchmarkFetchParallel(b *testing.B) {
 	})
 }
 
-type dbStub struct {
+type comicStub struct {
+}
+type keywordStub struct {
 }
 
-func (d *dbStub) Records() database.RecordMap {
-	return make(database.RecordMap)
+func (d *comicStub) Comics(_ context.Context, _ []int) ([]*domain.Comic, error) {
+	return make([]*domain.Comic, 0), nil
 }
 
-func (d *dbStub) Save(_ database.RecordMap) error {
+func (d *comicStub) All(_ context.Context) ([]*domain.Comic, error) {
+	return make([]*domain.Comic, 0), nil
+}
+
+func (d *comicStub) Save(_ context.Context, _ []*domain.Comic) error {
+	return nil
+}
+
+func (d *keywordStub) Keywords(_ context.Context, _ []string) ([]*domain.ComicKeyword, error) {
+	return make([]*domain.ComicKeyword, 0), nil
+}
+
+func (d *keywordStub) Save(_ context.Context, _ []*domain.ComicKeyword) error {
 	return nil
 }
 
 func newService(parallel int) *service.Updater {
 	log := slog.New(logger.EmptyHandler{})
+	stemmer := stemming.New()
 	client := xkcd.NewHttpClient("https://xkcd.com", time.Minute)
 
-	return service.NewUpdater(log, client, &dbStub{}, 99999, parallel)
+	return service.NewUpdater(log, stemmer, &comicStub{}, &keywordStub{}, client, 99999, parallel)
 }
