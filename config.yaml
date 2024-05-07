@@ -1,5 +1,5 @@
-db_file: "database.json"
 source_url: "https://xkcd.com"
+dsn: "database.db"
 parallel: 200
 fetch_limit: 5000
 scheduler_hour: 3
