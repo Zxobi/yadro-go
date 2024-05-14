@@ -16,6 +16,7 @@ import (
 	"yadro-go/internal/adapter/secondary/xkcd"
 	"yadro-go/internal/core/service"
 	"yadro-go/internal/core/service/stemming"
+	"yadro-go/internal/core/service/token"
 	"yadro-go/pkg/config"
 	"yadro-go/pkg/httpserver"
 	logutil "yadro-go/pkg/logger"
@@ -56,16 +57,19 @@ func Run(logger *slog.Logger, cfg *config.Config) error {
 
 	log.Info("migrations done")
 
-	comicsRepo := repository.NewComicRepository(log, db)
-	keywordsRepo := repository.NewKeywordRepository(log, db)
+	comicsRepo := repository.NewComicRepository(logger, db)
+	keywordsRepo := repository.NewKeywordRepository(logger, db)
+	usersRepo := repository.NewUserRepository(logger, db)
+	tokenManager := token.NewJwtTokenManager(logger, []byte(cfg.TokenSecret))
 	stemmer := stemming.New()
 
-	client := xkcd.NewHttpClient(cfg.Url, cfg.ReqTimeout)
+	client := xkcd.NewHttpClient(logger, cfg.Url, cfg.ReqTimeout)
 	updater := service.NewUpdater(logger, stemmer, comicsRepo, keywordsRepo, client, cfg.FetchLimit, cfg.Parallel)
 	scanner := service.NewScanner(logger, stemmer, comicsRepo, keywordsRepo)
+	auth := service.NewAuth(logger, tokenManager, usersRepo)
 
 	handler := nethttp.NewServeMux()
-	http.NewRouter(logger, handler, scanner, updater, http.ScanTimeout(cfg.ScanTimeout), http.ScanLimit(cfg.ScanLimit))
+	http.NewRouter(logger, handler, scanner, updater, auth, http.ScanTimeout(cfg.ScanTimeout), http.ScanLimit(cfg.ScanLimit))
 	server := httpserver.New(logger, handler, httpserver.Port(strconv.Itoa(cfg.Port)))
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)

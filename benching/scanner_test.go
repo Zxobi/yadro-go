@@ -39,7 +39,7 @@ func init() {
 	keywordsRepo := repository.NewKeywordRepository(log, db)
 	stemmer := stemming.New()
 
-	client := xkcd.NewHttpClient("https://xkcd.com", time.Minute)
+	client := xkcd.NewHttpClient(log, "https://xkcd.com", time.Minute)
 	updater := service.NewUpdater(log, stemmer, comicsRepo, keywordsRepo, client, 2000, 200)
 
 	if _, err = updater.Update(context.Background()); err != nil {

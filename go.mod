@@ -3,10 +3,12 @@ module yadro-go
 go 1.22
 
 require (
+	github.com/form3tech-oss/jwt-go v3.2.5+incompatible
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/kljensen/snowball v0.9.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/spf13/viper v1.18.2
+	golang.org/x/crypto v0.20.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
 

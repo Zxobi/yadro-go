@@ -24,3 +24,12 @@ type KeywordRepository interface {
 	Keywords(ctx context.Context, keywords []string) ([]*domain.ComicKeyword, error)
 	Save(ctx context.Context, keywords []*domain.ComicKeyword) error
 }
+
+type UserRepository interface {
+	UserByUsername(ctx context.Context, username string) (*domain.User, error)
+}
+
+type TokenManager interface {
+	Token(username string) (string, error)
+	Verify(token string) (string, error)
+}

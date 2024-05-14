@@ -18,12 +18,14 @@ const (
 	optPort            = "port"
 	optSchedulerHour   = "scheduler_hour"
 	optSchedulerMinute = "scheduler_minute"
+	optTokenSecret     = "token_secret"
 )
 
 type Config struct {
 	Dsn             string
 	Url             string
 	Migrations      string
+	TokenSecret     string
 	FetchLimit      int
 	Parallel        int
 	ScanLimit       int
@@ -50,6 +52,7 @@ func ReadConfig(path string) (*Config, error) {
 	viper.SetDefault(optPort, 20202)
 	viper.SetDefault(optDsn, "database.db")
 	viper.SetDefault(optMigrations, "migrations")
+	viper.SetDefault(optTokenSecret, "token-secret")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
@@ -59,6 +62,7 @@ func ReadConfig(path string) (*Config, error) {
 		Dsn:             viper.GetString(optDsn),
 		Url:             viper.GetString(optSourceUrl),
 		Migrations:      viper.GetString(optMigrations),
+		TokenSecret:     viper.GetString(optTokenSecret),
 		FetchLimit:      viper.GetInt(optFetchLimit),
 		ScanLimit:       viper.GetInt(optScanLimit),
 		Parallel:        viper.GetInt(optParallel),

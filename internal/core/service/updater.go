@@ -8,12 +8,10 @@ import (
 	"log/slog"
 	"sync"
 	"time"
-	"yadro-go/internal/adapter/secondary/xkcd"
+	"yadro-go/internal/adapter/secondary"
 	"yadro-go/internal/core/domain"
 	"yadro-go/pkg/logger"
 )
-
-var ErrUpdateInProgress = errors.New("update already in progress")
 
 type Updater struct {
 	log         *slog.Logger
@@ -87,7 +85,7 @@ func (u *Updater) Update(ctx context.Context) (int, error) {
 
 	if !u.mu.TryLock() {
 		log.Warn("update already in progress")
-		return 0, ErrUpdateInProgress
+		return 0, fmt.Errorf("%s: %w", op, ErrUpdateInProgress)
 	}
 	defer u.mu.Unlock()
 
@@ -155,7 +153,7 @@ func (u *Updater) Update(ctx context.Context) (int, error) {
 				loop = false
 			}
 		case workerErr := <-errs:
-			if !errors.Is(workerErr, xkcd.NotFound) {
+			if !errors.Is(workerErr, secondary.ErrComicNotFound) {
 				log.Debug("finishing update due to worker error")
 				err = workerErr
 			}

@@ -2,7 +2,9 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -21,6 +23,7 @@ type router struct {
 	log     *slog.Logger
 	scanner QueryScanner
 	updater Updater
+	auth    Auth
 
 	scanTimeout time.Duration
 	scanLimit   int
@@ -34,11 +37,23 @@ type Updater interface {
 	Update(ctx context.Context) (int, error)
 }
 
-func NewRouter(log *slog.Logger, handler *http.ServeMux, scanner QueryScanner, updater Updater, opts ...Option) {
+type Auth interface {
+	Login(ctx context.Context, username string, password string) (string, error)
+}
+
+func NewRouter(
+	log *slog.Logger,
+	handler *http.ServeMux,
+	scanner QueryScanner,
+	updater Updater,
+	auth Auth,
+	opts ...Option,
+) {
 	r := &router{
 		log:         log,
 		scanner:     scanner,
 		updater:     updater,
+		auth:        auth,
 		scanTimeout: defaultScanTimeout,
 		scanLimit:   defaultScanLimit,
 	}
@@ -47,6 +62,7 @@ func NewRouter(log *slog.Logger, handler *http.ServeMux, scanner QueryScanner, u
 		opt(r)
 	}
 
+	handler.HandleFunc("POST /login", r.Login)
 	handler.HandleFunc("POST /update", r.Update)
 	handler.HandleFunc("GET /pics", r.Pics)
 }
@@ -112,5 +128,48 @@ func (r *router) Pics(w http.ResponseWriter, req *http.Request) {
 
 	if err = responseJson(w, res); err != nil {
 		log.Error("failed to response", logger.Err(err))
+	}
+}
+
+func (r *router) Login(w http.ResponseWriter, req *http.Request) {
+	const op = "router.Login"
+	log := r.log.With(slog.String("op", op))
+
+	log.Debug("handle login")
+
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		log.Error("failed to read body", logger.Err(err))
+		responseError(w, http.StatusBadRequest, "bad request")
+		return
+	}
+
+	var loginRequest LoginRequest
+	if err = json.Unmarshal(body, &loginRequest); err != nil {
+		log.Error("failed to unmarshal login request", logger.Err(err))
+		responseError(w, http.StatusBadRequest, "bad request")
+		return
+	}
+
+	if len(loginRequest.Username) == 0 {
+		responseError(w, http.StatusBadRequest, "username is mandatory")
+		return
+	}
+
+	token, err := r.auth.Login(req.Context(), loginRequest.Username, loginRequest.Password)
+	if err != nil {
+		if errors.Is(err, service.ErrWrongCredentials) {
+			responseError(w, http.StatusUnauthorized, "wrong credentials")
+			return
+		}
+
+		log.Error("failed to login", logger.Err(err))
+		responseError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if err = responseJson(w, LoginResponse{Token: token}); err != nil {
+		log.Error("failed to response", logger.Err(err))
+		return
 	}
 }
