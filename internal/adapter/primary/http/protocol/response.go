@@ -1,4 +1,4 @@
-package http
+package protocol
 
 import (
 	"encoding/json"
@@ -17,12 +17,12 @@ type errResp struct {
 	Error string `json:"error"`
 }
 
-func responseError(w http.ResponseWriter, code int, msg string) {
+func ResponseError(w http.ResponseWriter, code int, msg string) {
 	w.WriteHeader(code)
-	_ = responseJson(w, errResp{Error: msg})
+	_ = ResponseJson(w, errResp{Error: msg})
 }
 
-func responseJson(w http.ResponseWriter, v any) error {
+func ResponseJson(w http.ResponseWriter, v any) error {
 	res, err := json.Marshal(v)
 	if err != nil {
 		return err

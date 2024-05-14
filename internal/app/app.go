@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"syscall"
 	"yadro-go/internal/adapter/primary/http"
+	"yadro-go/internal/adapter/primary/http/middleware"
 	"yadro-go/internal/adapter/secondary/repository"
 	"yadro-go/internal/adapter/secondary/xkcd"
 	"yadro-go/internal/core/service"
@@ -60,7 +61,7 @@ func Run(logger *slog.Logger, cfg *config.Config) error {
 	comicsRepo := repository.NewComicRepository(logger, db)
 	keywordsRepo := repository.NewKeywordRepository(logger, db)
 	usersRepo := repository.NewUserRepository(logger, db)
-	tokenManager := token.NewJwtTokenManager(logger, []byte(cfg.TokenSecret))
+	tokenManager := token.NewJwtTokenManager(logger, []byte(cfg.TokenSecret), cfg.TokenTTL)
 	stemmer := stemming.New()
 
 	client := xkcd.NewHttpClient(logger, cfg.Url, cfg.ReqTimeout)
@@ -68,8 +69,18 @@ func Run(logger *slog.Logger, cfg *config.Config) error {
 	scanner := service.NewScanner(logger, stemmer, comicsRepo, keywordsRepo)
 	auth := service.NewAuth(logger, tokenManager, usersRepo)
 
+	authMiddleware := middleware.NewAuthMiddleware(log, auth)
+
 	handler := nethttp.NewServeMux()
-	http.NewRouter(logger, handler, scanner, updater, auth, http.ScanTimeout(cfg.ScanTimeout), http.ScanLimit(cfg.ScanLimit))
+	http.NewRouter(
+		logger,
+		handler,
+		scanner,
+		updater,
+		auth,
+		authMiddleware,
+		http.ScanTimeout(cfg.ScanTimeout), http.ScanLimit(cfg.ScanLimit),
+	)
 	server := httpserver.New(logger, handler, httpserver.Port(strconv.Itoa(cfg.Port)))
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)

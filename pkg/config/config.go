@@ -19,6 +19,7 @@ const (
 	optSchedulerHour   = "scheduler_hour"
 	optSchedulerMinute = "scheduler_minute"
 	optTokenSecret     = "token_secret"
+	optTokenTTL        = "token_ttl"
 )
 
 type Config struct {
@@ -34,6 +35,7 @@ type Config struct {
 	SchedulerMinute int
 	ReqTimeout      time.Duration
 	ScanTimeout     time.Duration
+	TokenTTL        time.Duration
 }
 
 func ReadConfig(path string) (*Config, error) {
@@ -53,6 +55,7 @@ func ReadConfig(path string) (*Config, error) {
 	viper.SetDefault(optDsn, "database.db")
 	viper.SetDefault(optMigrations, "migrations")
 	viper.SetDefault(optTokenSecret, "token-secret")
+	viper.SetDefault(optTokenTTL, 1*time.Hour)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
@@ -71,5 +74,6 @@ func ReadConfig(path string) (*Config, error) {
 		SchedulerMinute: viper.GetInt(optSchedulerMinute),
 		ReqTimeout:      viper.GetDuration(optReqTimeout),
 		ScanTimeout:     viper.GetDuration(optScanTimeout),
+		TokenTTL:        viper.GetDuration(optTokenTTL),
 	}, nil
 }

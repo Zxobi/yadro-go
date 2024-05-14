@@ -1,4 +1,4 @@
-package http
+package protocol
 
 type LoginRequest struct {
 	Username string `json:"username"`

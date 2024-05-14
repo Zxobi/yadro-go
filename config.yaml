@@ -6,3 +6,4 @@ scheduler_hour: 3
 scheduler_minute: 0
 scan_timeout: 5s
 scan_limit: 10
+token_ttl: 1h

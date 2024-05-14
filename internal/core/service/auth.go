@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"log/slog"
 	"yadro-go/internal/adapter/secondary"
+	"yadro-go/internal/core/domain"
 	"yadro-go/pkg/logger"
 )
 
@@ -55,5 +56,30 @@ func (a *Auth) Login(ctx context.Context, username string, password string) (str
 		return "", fmt.Errorf("%s: %w", op, ErrInternal)
 	}
 
+	log.Debug("logged in")
+
 	return token, nil
+}
+
+func (a *Auth) Authenticate(ctx context.Context, token string) (*domain.User, error) {
+	const op = "auth.Authenticate"
+	log := a.log.With(slog.String("op", op))
+
+	log.Debug("authenticating")
+
+	username, err := a.tokenManager.Verify(token)
+	if err != nil {
+		log.Error("failed to verify token", logger.Err(err))
+		return nil, ErrBadToken
+	}
+
+	user, err := a.userRepo.UserByUsername(ctx, username)
+	if err != nil {
+		log.Error("failed to get user", logger.Err(err))
+		return nil, ErrInternal
+	}
+
+	log.Debug("authenticated", slog.String("uname", user.Username))
+
+	return user, nil
 }

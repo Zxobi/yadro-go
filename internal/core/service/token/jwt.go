@@ -2,27 +2,32 @@ package token
 
 import (
 	"fmt"
-	"github.com/form3tech-oss/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 	"log/slog"
+	"time"
 	"yadro-go/internal/core/service"
 	"yadro-go/pkg/logger"
 )
 
 type JwtTokenManager struct {
-	log    *slog.Logger
-	secret []byte
+	log      *slog.Logger
+	secret   []byte
+	tokenTTL time.Duration
 }
 
-func NewJwtTokenManager(log *slog.Logger, secret []byte) *JwtTokenManager {
-	return &JwtTokenManager{log: log, secret: secret}
+func NewJwtTokenManager(log *slog.Logger, secret []byte, tokenTTL time.Duration) *JwtTokenManager {
+	return &JwtTokenManager{log: log, secret: secret, tokenTTL: tokenTTL}
 }
 
 func (t *JwtTokenManager) Token(username string) (string, error) {
 	const op = "token.Token"
 	log := t.log.With(slog.String("op", op))
 
-	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": username,
+	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(t.tokenTTL)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		NotBefore: jwt.NewNumericDate(time.Now()),
+		Subject:   username,
 	}).SignedString(t.secret)
 
 	if err != nil {
@@ -49,15 +54,9 @@ func (t *JwtTokenManager) Verify(tokenString string) (string, error) {
 		return "", fmt.Errorf("%s: %w", op, service.ErrBadToken)
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		log.Error("failed to get token claims")
-		return "", fmt.Errorf("%s: %w", op, service.ErrBadToken)
-	}
-
-	username, ok := claims["sub"].(string)
-	if !ok {
-		log.Error("failed to get token sub")
+	username, err := token.Claims.GetSubject()
+	if err != nil {
+		log.Error("subject is missing")
 		return "", fmt.Errorf("%s: %w", op, service.ErrBadToken)
 	}
 
