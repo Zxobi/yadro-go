@@ -6,6 +6,6 @@ scheduler_hour: 3
 scheduler_minute: 0
 scan_timeout: 5s
 scan_limit: 10
-token_max_time: 1m
+token_max_time: 1h
 rate_limit: 1
 concurrency_limit: 2

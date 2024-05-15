@@ -41,6 +41,7 @@ func ApplyRouter(
 	auth primary.Auth,
 	authMiddleware *middleware.AuthMiddleware,
 	rpsMiddleware *middleware.RpsLimitMiddleware,
+	concurrencyMiddleware *middleware.ConcurrencyLimitMiddleware,
 	opts ...Option,
 ) {
 	r := &router{
@@ -58,7 +59,11 @@ func ApplyRouter(
 
 	handler.HandleFunc("POST /login", r.Login)
 	handler.HandleFunc("POST /update", authMiddleware.WithAuth(domain.ROLE_ADMIN, r.Update))
-	handler.HandleFunc("GET /pics", authMiddleware.WithAuth(domain.ROLE_USER, rpsMiddleware.WithRpsLimit(r.Pics)))
+	handler.HandleFunc("GET /pics", concurrencyMiddleware.WithConcurrencyLimit(
+		authMiddleware.WithAuth(
+			domain.ROLE_USER,
+			rpsMiddleware.WithRpsLimit(r.Pics))),
+	)
 }
 
 func (r *router) Update(w http.ResponseWriter, req *http.Request, user *domain.User) {

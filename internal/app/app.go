@@ -85,11 +85,12 @@ func Run(logger *slog.Logger, cfg *config.Config) error {
 		auth,
 		authMiddleware,
 		rpsMiddleware,
+		concurrencyMiddleware,
 		http.ScanTimeout(cfg.ScanTimeout), http.ScanLimit(cfg.ScanLimit),
 	)
 	server := httpserver.New(
 		logger,
-		concurrencyMiddleware.WithConcurrencyLimit(handler),
+		handler,
 		httpserver.Port(strconv.Itoa(cfg.Port)),
 	)
 

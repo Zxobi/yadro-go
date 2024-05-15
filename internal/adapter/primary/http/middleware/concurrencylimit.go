@@ -19,11 +19,11 @@ func NewConcurrencyLimitMiddleware(log *slog.Logger, limit int) *ConcurrencyLimi
 	}
 }
 
-func (c *ConcurrencyLimitMiddleware) WithConcurrencyLimit(next http.Handler) http.Handler {
+func (c *ConcurrencyLimitMiddleware) WithConcurrencyLimit(next http.HandlerFunc) http.HandlerFunc {
 	const op = "middleware.WithConcurrencyLimit"
 	log := c.log.With(slog.String("op", op))
 
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
 		if !c.semaphore.TryAcquire() {
 			log.Warn("concurrency limit exceeded")
 			protocol.ResponseError(w, http.StatusServiceUnavailable, "service unavailable, try again later")
@@ -31,6 +31,6 @@ func (c *ConcurrencyLimitMiddleware) WithConcurrencyLimit(next http.Handler) htt
 		}
 		defer c.semaphore.Release()
 
-		next.ServeHTTP(w, req)
-	})
+		next(w, req)
+	}
 }
