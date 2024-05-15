@@ -33,13 +33,14 @@ type router struct {
 	scanLimit   int
 }
 
-func NewRouter(
+func ApplyRouter(
 	log *slog.Logger,
 	handler *http.ServeMux,
 	scanner primary.QueryScanner,
 	updater primary.Updater,
 	auth primary.Auth,
 	authMiddleware *middleware.AuthMiddleware,
+	rpsMiddleware *middleware.RpsLimitMiddleware,
 	opts ...Option,
 ) {
 	r := &router{
@@ -57,12 +58,12 @@ func NewRouter(
 
 	handler.HandleFunc("POST /login", r.Login)
 	handler.HandleFunc("POST /update", authMiddleware.WithAuth(domain.ROLE_ADMIN, r.Update))
-	handler.HandleFunc("GET /pics", authMiddleware.WithAuth(domain.ROLE_USER, r.Pics))
+	handler.HandleFunc("GET /pics", authMiddleware.WithAuth(domain.ROLE_USER, rpsMiddleware.WithRpsLimit(r.Pics)))
 }
 
-func (r *router) Update(w http.ResponseWriter, req *http.Request) {
+func (r *router) Update(w http.ResponseWriter, req *http.Request, user *domain.User) {
 	const op = "router.Update"
-	log := r.log.With(slog.String("op", op))
+	log := r.log.With(slog.String("op", op), slog.String("uname", user.Username))
 
 	log.Debug("handle update")
 
@@ -83,9 +84,9 @@ func (r *router) Update(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (r *router) Pics(w http.ResponseWriter, req *http.Request) {
+func (r *router) Pics(w http.ResponseWriter, req *http.Request, user *domain.User) {
 	const op = "router.Pics"
-	log := r.log.With(slog.String("op", op))
+	log := r.log.With(slog.String("op", op), slog.String("uname", user.Username))
 
 	log.Debug("handle search")
 

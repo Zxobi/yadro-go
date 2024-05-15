@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"yadro-go/internal/adapter/primary/http"
 	"yadro-go/internal/adapter/primary/http/middleware"
+	"yadro-go/internal/adapter/primary/http/ratelimiter"
 	"yadro-go/internal/adapter/secondary/repository"
 	"yadro-go/internal/adapter/secondary/xkcd"
 	"yadro-go/internal/core/service"
@@ -69,19 +70,28 @@ func Run(logger *slog.Logger, cfg *config.Config) error {
 	scanner := service.NewScanner(logger, stemmer, comicsRepo, keywordsRepo)
 	auth := service.NewAuth(logger, tokenManager, usersRepo)
 
-	authMiddleware := middleware.NewAuthMiddleware(log, auth)
+	rateLimiter := ratelimiter.NewRateLimiter(cfg.RateLimit)
+	authMiddleware := middleware.NewAuthMiddleware(logger, auth)
+	rpsMiddleware := middleware.NewRpcLimitMiddleware(logger, rateLimiter)
+	concurrencyMiddleware := middleware.NewConcurrencyLimitMiddleware(logger, cfg.ConcurrencyLimit)
 
 	handler := nethttp.NewServeMux()
-	http.NewRouter(
+
+	http.ApplyRouter(
 		logger,
 		handler,
 		scanner,
 		updater,
 		auth,
 		authMiddleware,
+		rpsMiddleware,
 		http.ScanTimeout(cfg.ScanTimeout), http.ScanLimit(cfg.ScanLimit),
 	)
-	server := httpserver.New(logger, handler, httpserver.Port(strconv.Itoa(cfg.Port)))
+	server := httpserver.New(
+		logger,
+		concurrencyMiddleware.WithConcurrencyLimit(handler),
+		httpserver.Port(strconv.Itoa(cfg.Port)),
+	)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()

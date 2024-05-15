@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"yadro-go/internal/adapter/primary"
+	"yadro-go/internal/adapter/primary/http/hanlder"
 	"yadro-go/internal/adapter/primary/http/protocol"
 	"yadro-go/internal/core/service"
 	"yadro-go/pkg/logger"
@@ -20,7 +21,7 @@ func NewAuthMiddleware(log *slog.Logger, auth primary.Auth) *AuthMiddleware {
 	return &AuthMiddleware{log: log, auth: auth}
 }
 
-func (a *AuthMiddleware) WithAuth(role int, next http.HandlerFunc) http.HandlerFunc {
+func (a *AuthMiddleware) WithAuth(role int, next hanlder.AuthenticatedHandlerFunc) http.HandlerFunc {
 	const op = "middleware.WithAuth"
 	log := a.log.With(slog.String("op", op))
 
@@ -49,8 +50,7 @@ func (a *AuthMiddleware) WithAuth(role int, next http.HandlerFunc) http.HandlerF
 			protocol.ResponseError(w, http.StatusForbidden, "forbidden")
 			return
 		}
-
-		next(w, request)
+		next(w, request, user)
 	}
 }
 
