@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"syscall"
 	"yadro-go/internal/adapter/primary/http"
-	"yadro-go/internal/adapter/primary/http/middleware"
-	"yadro-go/internal/adapter/primary/http/ratelimiter"
 	"yadro-go/internal/adapter/secondary/repository"
 	"yadro-go/internal/adapter/secondary/xkcd"
 	"yadro-go/internal/core/service"
@@ -70,11 +68,6 @@ func Run(logger *slog.Logger, cfg *config.Config) error {
 	scanner := service.NewScanner(logger, stemmer, comicsRepo, keywordsRepo)
 	auth := service.NewAuth(logger, tokenManager, usersRepo)
 
-	rateLimiter := ratelimiter.NewRateLimiter(cfg.RateLimit)
-	authMiddleware := middleware.NewAuthMiddleware(logger, auth)
-	rpsMiddleware := middleware.NewRpcLimitMiddleware(logger, rateLimiter)
-	concurrencyMiddleware := middleware.NewConcurrencyLimitMiddleware(logger, cfg.ConcurrencyLimit)
-
 	handler := nethttp.NewServeMux()
 
 	http.ApplyRouter(
@@ -83,9 +76,8 @@ func Run(logger *slog.Logger, cfg *config.Config) error {
 		scanner,
 		updater,
 		auth,
-		authMiddleware,
-		rpsMiddleware,
-		concurrencyMiddleware,
+		cfg.RateLimit,
+		cfg.ConcurrencyLimit,
 		http.ScanTimeout(cfg.ScanTimeout), http.ScanLimit(cfg.ScanLimit),
 	)
 	server := httpserver.New(

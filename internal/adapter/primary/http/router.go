@@ -11,6 +11,7 @@ import (
 	"yadro-go/internal/adapter/primary"
 	"yadro-go/internal/adapter/primary/http/middleware"
 	"yadro-go/internal/adapter/primary/http/protocol"
+	"yadro-go/internal/adapter/primary/http/ratelimiter"
 	"yadro-go/internal/core/domain"
 	"yadro-go/internal/core/service"
 	"yadro-go/pkg/logger"
@@ -39,9 +40,8 @@ func ApplyRouter(
 	scanner primary.QueryScanner,
 	updater primary.Updater,
 	auth primary.Auth,
-	authMiddleware *middleware.AuthMiddleware,
-	rpsMiddleware *middleware.RpsLimitMiddleware,
-	concurrencyMiddleware *middleware.ConcurrencyLimitMiddleware,
+	rpsLimit int,
+	concurrencyLimit int,
 	opts ...Option,
 ) {
 	r := &router{
@@ -56,6 +56,10 @@ func ApplyRouter(
 	for _, opt := range opts {
 		opt(r)
 	}
+
+	authMiddleware := middleware.NewAuthMiddleware(log, auth)
+	rpsMiddleware := middleware.NewRpcLimitMiddleware(log, ratelimiter.NewRateLimiter(rpsLimit))
+	concurrencyMiddleware := middleware.NewConcurrencyLimitMiddleware(log, concurrencyLimit)
 
 	handler.HandleFunc("POST /login", r.Login)
 	handler.HandleFunc("POST /update", authMiddleware.WithAuth(domain.ROLE_ADMIN, r.Update))
