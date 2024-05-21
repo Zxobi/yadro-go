@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"yadro-go/internal/adapter/secondary"
 	"yadro-go/internal/core/domain"
 	"yadro-go/pkg/logger"
 	"yadro-go/pkg/util"
@@ -34,14 +35,14 @@ func (r *ComicRepository) Comics(ctx context.Context, nums []int) ([]*domain.Com
 	stmt, err := r.db.PrepareContext(ctx, fmt.Sprintf(formatStatementSelectComics, util.GeneratePlaceholders(len(nums))))
 	if err != nil {
 		log.Error("failed to prepare statement", logger.Err(err))
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.QueryContext(ctx, util.SliceToAny(nums)...)
 	if err != nil {
 		log.Error("failed to query comics", logger.Err(err))
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 	defer rows.Close()
 
@@ -52,7 +53,7 @@ func (r *ComicRepository) Comics(ctx context.Context, nums []int) ([]*domain.Com
 		err = rows.Scan(&comic.Num, &comic.Title, &comic.Transcript, &comic.Alt, &comic.Img)
 		if err != nil {
 			log.Error("failed to decode comic", logger.Err(err))
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 		}
 
 		comics = append(comics, &comic)
@@ -60,7 +61,7 @@ func (r *ComicRepository) Comics(ctx context.Context, nums []int) ([]*domain.Com
 
 	if err = rows.Err(); err != nil {
 		log.Error("error during rows iteration", logger.Err(err))
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 
 	log.Debug("fetch comics complete")
@@ -77,7 +78,7 @@ func (r *ComicRepository) All(ctx context.Context) ([]*domain.Comic, error) {
 	rows, err := r.db.QueryContext(ctx, querySelectAllComics)
 	if err != nil {
 		log.Error("failed to query all comics")
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 	defer rows.Close()
 
@@ -89,7 +90,7 @@ func (r *ComicRepository) All(ctx context.Context) ([]*domain.Comic, error) {
 		err = rows.Scan(&comic.Num, &comic.Title, &comic.Transcript, &comic.Alt, &comic.Img)
 		if err != nil {
 			log.Error("failed to decode comic", logger.Err(err))
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 		}
 
 		res = append(res, &comic)
@@ -97,7 +98,7 @@ func (r *ComicRepository) All(ctx context.Context) ([]*domain.Comic, error) {
 
 	if err = rows.Err(); err != nil {
 		log.Error("error during rows iteration", logger.Err(err))
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 
 	log.Debug("fetch all comics complete")
@@ -114,13 +115,13 @@ func (r *ComicRepository) Save(ctx context.Context, comics []*domain.Comic) erro
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		log.Error("failed to start a transaction", logger.Err(err))
-		return err
+		return fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 
 	stmt, err := tx.PrepareContext(ctx, statementInsertOrReplaceComic)
 	if err != nil {
 		log.Error("failed to prepare statement", logger.Err(err))
-		return err
+		return fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 	defer stmt.Close()
 
@@ -131,12 +132,13 @@ func (r *ComicRepository) Save(ctx context.Context, comics []*domain.Comic) erro
 			if err = tx.Rollback(); err != nil {
 				log.Error("tx rollback failed", logger.Err(err))
 			}
-			return err
+			return fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
 		log.Error("tx commit failed", logger.Err(err))
+		return fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 
 	log.Debug("save comics complete")

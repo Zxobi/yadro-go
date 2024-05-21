@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"golang.org/x/exp/maps"
 	"log/slog"
+	"yadro-go/internal/adapter/secondary"
 	"yadro-go/internal/core/domain"
 	"yadro-go/pkg/logger"
 	"yadro-go/pkg/util"
@@ -34,14 +35,14 @@ func (r *KeywordRepository) Keywords(ctx context.Context, keywords []string) ([]
 	stmt, err := r.db.PrepareContext(ctx, fmt.Sprintf(formantStatementSelectKeywords, util.GeneratePlaceholders(len(keywords))))
 	if err != nil {
 		log.Error("failed to prepare statement", logger.Err(err))
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.QueryContext(ctx, util.SliceToAny(keywords)...)
 	if err != nil {
 		log.Error("failed to query keywords", logger.Err(err))
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 	defer rows.Close()
 
@@ -54,7 +55,7 @@ func (r *KeywordRepository) Keywords(ctx context.Context, keywords []string) ([]
 		err = rows.Scan(&word, &num)
 		if err != nil {
 			log.Error("failed to decode keyword", logger.Err(err))
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 		}
 
 		keyword, ok := keywordsMap[word]
@@ -68,7 +69,7 @@ func (r *KeywordRepository) Keywords(ctx context.Context, keywords []string) ([]
 
 	if err = rows.Err(); err != nil {
 		log.Error("error during rows iteration", logger.Err(err))
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 
 	log.Debug("fetch keywords complete")
@@ -85,13 +86,13 @@ func (r *KeywordRepository) Save(ctx context.Context, keywords []*domain.ComicKe
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		log.Error("failed to start a transaction", logger.Err(err))
-		return err
+		return fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 
 	stmt, err := tx.PrepareContext(ctx, statementInsertOrReplaceKeyword)
 	if err != nil {
 		log.Error("failed to prepare statement", logger.Err(err))
-		return err
+		return fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 	defer stmt.Close()
 
@@ -103,13 +104,14 @@ func (r *KeywordRepository) Save(ctx context.Context, keywords []*domain.ComicKe
 				if err = tx.Rollback(); err != nil {
 					log.Error("tx rollback failed", logger.Err(err))
 				}
-				return err
+				return fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 			}
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
 		log.Error("tx commit failed", logger.Err(err))
+		return fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 
 	log.Debug("save keywords complete")

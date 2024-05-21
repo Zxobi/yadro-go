@@ -2,50 +2,57 @@ package xkcd
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
+	"yadro-go/internal/adapter/secondary"
 	"yadro-go/internal/core/domain"
+	"yadro-go/pkg/logger"
 )
 
-var NotFound = errors.New("client: comic not found")
-var UnexpectedStatus = errors.New("client: unexpected status")
-
 type HttpClient struct {
-	c   http.Client
+	log *slog.Logger
+	c   *http.Client
 	url string
 }
 
-func NewHttpClient(url string, timeout time.Duration) *HttpClient {
-	c := http.Client{Timeout: timeout}
-	return &HttpClient{c, url}
+func NewHttpClient(log *slog.Logger, url string, timeout time.Duration) *HttpClient {
+	c := &http.Client{Timeout: timeout}
+	return &HttpClient{log: log, c: c, url: url}
 }
 
 func (xc *HttpClient) GetById(id int) (*domain.Comic, error) {
+	const op = "xkcd.GetById"
+	log := xc.log.With(slog.String("op", op))
+
 	resp, err := xc.doGet(xc.makeComicUrl(id))
 	if err != nil {
-		return nil, err
+		log.Error("failed to make a request", logger.Err(err))
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
-			return nil, NotFound
+			return nil, fmt.Errorf("%s: %w", op, secondary.ErrComicNotFound)
 		}
 
-		return nil, UnexpectedStatus
+		log.With(slog.Int("status", resp.StatusCode)).Error("failed to fetch comic")
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		log.Error("failed to read body", logger.Err(err))
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 
 	comic, err := parseBody(body)
 	if err != nil {
-		return nil, err
+		log.Error("failed to parse body", logger.Err(err))
+		return nil, fmt.Errorf("%s: %w", op, secondary.ErrInternal)
 	}
 
 	return comic, nil

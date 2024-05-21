@@ -1,5 +1,10 @@
 package domain
 
+const (
+	ROLE_USER  = iota
+	ROLE_ADMIN = iota
+)
+
 type Comic struct {
 	Num        int    `json:"num"`
 	Title      string `json:"title"`
@@ -11,4 +16,14 @@ type Comic struct {
 type ComicKeyword struct {
 	Word string
 	Nums []int
+}
+
+type User struct {
+	Username string
+	Role     int
+	PassHash []byte
+}
+
+func (u User) HasRole(role int) bool {
+	return u.Role >= role
 }

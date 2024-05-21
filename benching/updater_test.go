@@ -103,7 +103,7 @@ func (d *keywordStub) Save(_ context.Context, _ []*domain.ComicKeyword) error {
 func newService(parallel int) *service.Updater {
 	log := slog.New(logger.EmptyHandler{})
 	stemmer := stemming.New()
-	client := xkcd.NewHttpClient("https://xkcd.com", time.Minute)
+	client := xkcd.NewHttpClient(log, "https://xkcd.com", time.Minute)
 
 	return service.NewUpdater(log, stemmer, &comicStub{}, &keywordStub{}, client, 99999, parallel)
 }

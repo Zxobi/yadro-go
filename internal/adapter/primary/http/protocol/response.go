@@ -1,4 +1,4 @@
-package http
+package protocol
 
 import (
 	"encoding/json"
@@ -9,19 +9,20 @@ type UpdateResponse struct {
 	Total int `json:"total"`
 }
 
+type LoginResponse struct {
+	Token string `json:"token"`
+}
+
 type errResp struct {
 	Error string `json:"error"`
 }
 
-func responseError(w http.ResponseWriter, code int, msg string) {
-	w.Header().Add("Content-Type", "application/json")
+func ResponseError(w http.ResponseWriter, code int, msg string) {
 	w.WriteHeader(code)
-	if bytes, err := json.Marshal(errResp{Error: msg}); err == nil {
-		_, _ = w.Write(bytes)
-	}
+	_ = ResponseJson(w, errResp{Error: msg})
 }
 
-func responseJson(w http.ResponseWriter, v any) error {
+func ResponseJson(w http.ResponseWriter, v any) error {
 	res, err := json.Marshal(v)
 	if err != nil {
 		return err
