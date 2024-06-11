@@ -94,7 +94,7 @@ func (u *Updater) Update(ctx context.Context) (int, error) {
 	comics, err := u.comicRepo.All(ctx)
 	if err != nil {
 		log.Error("failed to get all comics")
-		return 0, err
+		return 0, fmt.Errorf("%s: %w", op, ErrInternal)
 	}
 
 	comicsMap := make(map[int]*domain.Comic, len(comics))
@@ -154,7 +154,7 @@ func (u *Updater) Update(ctx context.Context) (int, error) {
 			}
 		case workerErr := <-errs:
 			if !errors.Is(workerErr, secondary.ErrComicNotFound) {
-				log.Debug("finishing update due to worker error")
+				log.Error("finishing update due to worker error", logger.Err(workerErr))
 				err = workerErr
 			}
 			loop = false
@@ -168,6 +168,10 @@ func (u *Updater) Update(ctx context.Context) (int, error) {
 	wg.Wait()
 	close(res)
 
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, ErrInternal)
+	}
+
 	for comic := range res {
 		newCount++
 		comicsMap[comic.Num] = comic
@@ -179,18 +183,18 @@ func (u *Updater) Update(ctx context.Context) (int, error) {
 	}
 
 	comics = maps.Values(comicsMap)
-	if saveErr := u.comicRepo.Save(ctx, comics); saveErr != nil {
-		log.Error("failed to save comics")
-		return 0, errors.Join(err, saveErr)
+	if err = u.comicRepo.Save(ctx, comics); err != nil {
+		log.Error("failed to save comics", logger.Err(err))
+		return 0, fmt.Errorf("%s: %w", op, ErrInternal)
 	}
 
-	if keywordsErr := u.updateKeywords(ctx, comics); keywordsErr != nil {
-		log.Error("failed to update keywords")
-		return len(comics), errors.Join(err, keywordsErr)
+	if err = u.updateKeywords(ctx, comics); err != nil {
+		log.Error("failed to update keywords", logger.Err(err))
+		return 0, fmt.Errorf("%s: %w", op, ErrInternal)
 	}
 
 	log.Debug(fmt.Sprintf("update finished: %d new comics", newCount))
-	return len(comics), err
+	return len(comics), nil
 }
 
 func (u *Updater) updateKeywords(ctx context.Context, comics []*domain.Comic) error {

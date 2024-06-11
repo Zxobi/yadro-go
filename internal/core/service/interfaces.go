@@ -5,6 +5,8 @@ import (
 	"yadro-go/internal/core/domain"
 )
 
+//go:generate mockgen -source=interfaces.go -destination=mocks/mock.go
+
 type Stemmer interface {
 	StemString(str string) []string
 	StemComic(comic *domain.Comic) []string

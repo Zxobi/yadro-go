@@ -32,7 +32,7 @@ func (t *JwtTokenManager) Token(username string) (string, error) {
 
 	if err != nil {
 		log.Error("failed to make token", logger.Err(err))
-		return "", fmt.Errorf("%s: %w", service.ErrInternal)
+		return "", fmt.Errorf("%s: %w", op, service.ErrInternal)
 	}
 
 	return tokenString, nil

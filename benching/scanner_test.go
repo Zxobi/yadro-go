@@ -5,13 +5,13 @@ import (
 	"log/slog"
 	"testing"
 	"time"
-	"yadro-go/benching/logger"
 	"yadro-go/internal/adapter/secondary/repository"
 	"yadro-go/internal/adapter/secondary/xkcd"
 	"yadro-go/internal/core/service"
 	"yadro-go/internal/core/service/stemming"
 	logutil "yadro-go/pkg/logger"
 	"yadro-go/pkg/sqlite"
+	"yadro-go/test/logger"
 )
 
 var (

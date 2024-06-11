@@ -24,6 +24,6 @@ type User struct {
 	PassHash []byte
 }
 
-func (u User) HasRole(role int) bool {
+func (u *User) HasRole(role int) bool {
 	return u.Role >= role
 }

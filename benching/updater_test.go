@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"testing"
 	"time"
-	"yadro-go/benching/logger"
 	"yadro-go/internal/adapter/secondary/xkcd"
 	"yadro-go/internal/core/domain"
 	"yadro-go/internal/core/service"
 	"yadro-go/internal/core/service/stemming"
+	"yadro-go/test/logger"
 )
 
 func BenchmarkFetchParallel(b *testing.B) {
