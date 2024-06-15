@@ -52,7 +52,7 @@ func ReadConfig(path string) (*Config, error) {
 	viper.SetDefault(optSchedulerMinute, 0)
 	viper.SetDefault(optReqTimeout, math.MaxInt)
 	viper.SetDefault(optFetchLimit, math.MaxInt)
-	viper.SetDefault(optParallel, 1)
+	viper.SetDefault(optParallel, 200)
 	viper.SetDefault(optScanTimeout, math.MaxInt)
 	viper.SetDefault(optScanLimit, 10)
 	viper.SetDefault(optPort, 20202)
